@@ -3,7 +3,15 @@
 import * as vscode from 'vscode'
 const cp = require('child_process')
 
-const getPortInfos = (port: string) => {
+interface Info {
+  cmd: string
+  pid: string
+  protocol: string
+  ip: string
+  port: string
+}
+
+const getPortInfos: (port: string) => Promise<Info[]> = (port: string) => {
   return new Promise((resolve, reject) => {
     cp.exec(
       `lsof -i tcp:${port} | grep LISTEN`,
@@ -35,6 +43,16 @@ const getPortInfos = (port: string) => {
   })
 }
 
+const killPort = (pid: string) =>
+  new Promise((resolve, reject) => {
+    cp.exec(`kill -9 ${pid}`, (err: Error, stdout: string, stderr: string) => {
+      if (err || stderr) {
+        reject(err || stderr)
+      }
+      resolve(stdout)
+    })
+  })
+
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -54,6 +72,16 @@ export function activate(context: vscode.ExtensionContext) {
         return
       }
       const infos = await getPortInfos(port)
+      const info = await vscode.window.showQuickPick(
+        infos.map((info) => `kill cmd:[${info.cmd}] pid:[${info.pid}]`)
+      )
+      if(!info) { return }
+      const matches = info.match(/pid:\[(.*)\]/)
+      if(matches && matches[1]) {
+        const pid = matches[1]
+        await killPort(pid)
+        vscode.window.showInformationMessage(`port ${pid} killed!`)
+      }
     }
   )
 
