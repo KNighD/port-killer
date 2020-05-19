@@ -80,7 +80,7 @@ export function activate(context: vscode.ExtensionContext) {
       if(matches && matches[1]) {
         const pid = matches[1]
         await killPort(pid)
-        vscode.window.showInformationMessage(`port ${pid} killed!`)
+        vscode.window.showInformationMessage(`port:[${port}] pid:[${pid}] has been killed!`)
       }
     }
   )
